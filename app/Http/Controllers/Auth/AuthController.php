@@ -3,12 +3,14 @@
 namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
+use App\Http\Traits\GeneraleTrait;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 
 class AuthController extends Controller
 {
+    use GeneraleTrait;
     /**
      * Create a new AuthController instance.
      *
@@ -23,49 +25,41 @@ class AuthController extends Controller
      *  @return Illuminate\Http\JsonResponse
      *
      */
-    function index() {
-        return response()->json([User::all()]);
+    function index()
+    {
+        $users = User::all();
+        return $this->returnData("data", $users, 200, "users selected !");
     }
     /**
      * listing user id
      *  @return Illuminate\Http\JsonResponse
      * @var int $id
      */
-    function show($id) {
+    function show($id)
+    {
         $userId = User::find($id);
-        if(!$userId){
-            return response()->json([
-                "status" =>404,
-                "msg" => "No user with $id"
-            ]);
+        if (!$userId) {
+            return $this->returnError(404, "No users found !");
         }
-        return response()->json([
-            "status" =>200,
-            "msg" => "User found !",
-            "data" => $userId
-        ]);
+        return
+            $this->returnData("data", $userId, 200, "User with $id found !");
     }
     /**
      * Create new user
      */
-    function register(Request $request)  {
+    function register(Request $request)
+    {
         // instance new user
         $user           = new User();
         $user->name     = $request->name;
         $user->email    = $request->email;
         $user->password = Hash::make($request->password);
+
         if (!$user->save()) {
-            return response()->json([
-                "status" =>500,
-                "msg" => "Error"
-            ]);
+            return $this->returnError(500, "Internal server error");
         }
 
-        return response()->json([
-            "status" =>200,
-            "msg" => "User Created Successfully !"
-        ]);
-
+        return $this->returnSuccessMessage(200, "User created !");
     }
     /**
      * Get a JWT via given credentials.
@@ -76,11 +70,12 @@ class AuthController extends Controller
     {
         $credentials = request(['email', 'password']);
 
-        if (! $token = auth()->attempt($credentials)) {
-            return response()->json(['error' => 'Unauthorized'], 401);
+        if (!$token = auth()->attempt($credentials)) {
+            return $this->returnError(401, "Unauthorized");
         }
 
-        return $this->respondWithToken($token);
+        $tokenAuth = $this->respondWithToken($token);
+        return $this->returnData("data", $tokenAuth->original, 200, "User logged !");
     }
 
     /**
@@ -90,7 +85,8 @@ class AuthController extends Controller
      */
     public function me()
     {
-        return response()->json(auth()->user());
+        $authUser = response()->json(auth()->user());
+        return $this->returnData("data", $authUser, 200, "Auth user details !");
     }
 
     /**
@@ -100,9 +96,11 @@ class AuthController extends Controller
      */
     public function logout()
     {
-        auth()->logout();
+        if (!auth()->logout()) {
+            return $this->returnError(500, "Internal server error");
+        }
 
-        return response()->json(['message' => 'Successfully logged out']);
+        return $this->returnSuccessMessage(200, "Successfully logged out");
     }
 
     /**

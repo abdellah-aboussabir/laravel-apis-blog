@@ -35,3 +35,13 @@ Route::group([
     Route::get('/',  [AuthController::class, "index"]);
     Route::get('/{id}',  [AuthController::class, "show"]);
 });
+
+// Route::apiResource('user', )
+
+// Route::group([
+//     'middleware'    =>  'api',
+//     'prefix'        =>  'blog'
+// ], function ($router) {
+//     Route::get('/',  [AuthController::class, "index"]);
+//     Route::get('/{id}',  [AuthController::class, "show"]);
+// });
