@@ -3,9 +3,15 @@
 namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Auth\LoginRequest;
+use App\Http\Requests\Auth\RegisterRequest;
+use App\Http\Requests\Auth\ResetPasswordRequest;
 use App\Http\Traits\GeneraleTrait;
 use App\Models\User;
+use Exception;
+use GuzzleHttp\Exception\ClientException;
 use Illuminate\Http\Request;
+use Tymon\JWTAuth\Facades\JWTAuth;
 use Illuminate\Support\Facades\Hash;
 
 class AuthController extends Controller
@@ -18,99 +24,198 @@ class AuthController extends Controller
      */
     public function __construct()
     {
-        $this->middleware('auth:api', ['except' => ['login', 'register']]);
+        $this->middleware('auth:api', ['except' => ['login', 'register', 'resetPassword']]);
     }
-    /**
-     * listing users
-     *  @return Illuminate\Http\JsonResponse
-     *
-     */
-    function index()
-    {
-        $users = User::all();
-        return $this->returnData("data", $users, 200, "users selected !");
-    }
-    /**
-     * listing user id
-     *  @return Illuminate\Http\JsonResponse
-     * @var int $id
-     */
-    function show($id)
-    {
-        $userId = User::find($id);
-        if (!$userId) {
-            return $this->returnError(404, "No users found !");
-        }
-        return
-            $this->returnData("data", $userId, 200, "User with $id found !");
-    }
-    /**
-     * Create new user
-     */
-    function register(Request $request)
-    {
-        // instance new user
-        $user           = new User();
-        $user->name     = $request->name;
-        $user->email    = $request->email;
-        $user->password = Hash::make($request->password);
 
-        if (!$user->save()) {
-            return $this->returnError(500, "Internal server error");
-        }
-
-        return $this->returnSuccessMessage(200, "User created !");
-    }
     /**
-     * Get a JWT via given credentials.
+     * register new user
      *
+     * @param RegisterRequest $request
      * @return \Illuminate\Http\JsonResponse
+     *
+     * -----------------@Reponses-------------------
+     * ----- 201 : User Created Successfully    ----
+     * ----- 500 : Something went wrong         ----
+     * ----- 422 : The given data was invalid   ----
+     * ----- 409 : Email Already Used           ----
+     * ---------------------------------------------
      */
-    public function login()
+    public function register(RegisterRequest $request)
     {
-        $credentials = request(['email', 'password']);
+        try {
 
-        if (!$token = auth()->attempt($credentials)) {
-            return $this->returnError(401, "Unauthorized");
+            // validation
+            $validatedData = $request->validated();
+
+            // new-user
+            $newUser = new User();
+            $newUser->name = $validatedData['name'];
+            $newUser->email = $validatedData['email'];
+            $newUser->password = Hash::make($validatedData['password']);
+
+            if (!$newUser->save()) {
+                return $this->returnError(500, "Something  Went Wrong");
+            }
+
+            return $this->returnSuccessMessage(201, "User Created Successfully");
+        } catch (ClientException $e) {
+            return $this->returnError(500, "Something  Went Wrong");
         }
+    }
 
-        $tokenAuth = $this->respondWithToken($token);
-        return $this->returnData("data", $tokenAuth->original, 200, "User logged !");
+    /**
+     * login
+     *
+     * @param LoginRequest $request
+     * @return \Illuminate\Http\JsonResponse
+     *
+     * -----------------@Reponses-------------------
+     * ----- 200 : Logged Successfully          ----
+     * ----- 500 : Something Went Wrong         ----
+     * ----- 422 : The given data was invalid   ----
+     * ----- 401 : Unauthorized                 ----
+     * ---------------------------------------------
+     *
+     */
+    public function login(LoginRequest $request)
+    {
+        try {
+
+            // validation
+            $validatedData = $request->validated();
+            $validatedData['email'];
+            $validatedData['password'];
+
+            // check-is-Authenticated
+            $credentials =  request(['email', 'password']);
+
+            if (!$token = auth()->attempt($credentials)) {
+                return $this->returnError(401, "Unauthorized");
+            }
+
+            // return-token && user_type
+            $details_response_token = $this->respondWithToken($token)->original;
+
+            return $this->returnData("data", $details_response_token, 200, "Logged Successfully");
+        } catch (\Exception $e) {
+            return $this->returnError(500, "Something  Went Wrong");
+        }
     }
 
     /**
      * Get the authenticated User.
      *
      * @return \Illuminate\Http\JsonResponse
+     *
+     * -----------------@Reponses-------------------
+     * ----- 200 : User Found Successfully      ----
+     * ----- 403 : UnAuthenticated              ----
+     * ---------------------------------------------
+     *
      */
     public function me()
     {
-        $authUser = response()->json(auth()->user());
-        return $this->returnData("data", $authUser, 200, "Auth user details !");
+        return $this->returnData("data", auth()->user(), 200, "You're Welcome !");
     }
 
     /**
-     * Log the user out (Invalidate the token).
+     * logout
      *
+     * @param Request $request
      * @return \Illuminate\Http\JsonResponse
+     *
+     * -----------------@Reponses-------------------
+     * ----- 200 : Logged Out Successfully      ----
+     * ----- 500 : Something  went wrong        ----
+     * ----- 403 : UnAuthenticated              ----
+     * ---------------------------------------------
+     *
      */
-    public function logout()
+    public function logout(Request $request)
     {
-        if (!auth()->logout()) {
-            return $this->returnError(500, "Internal server error");
-        }
+        $token =  $request->header('Authorization');
+        $tokenFormatted = str_replace("Bearer ", "", $token);
 
-        return $this->returnSuccessMessage(200, "Successfully logged out");
+        if ($tokenFormatted) {
+            try {
+                JWTAuth::setToken($tokenFormatted)->invalidate();
+            } catch (\Tymon\JWTAuth\Exceptions\TokenInvalidException $e) {
+                return $this->returnError(500, "Something  Went Wrong");
+            } catch (\Tymon\JWTAuth\Exceptions\TokenExpiredException $e) {
+                return $this->returnError(500, "Something  Went Wrong");
+            }
+            return $this->returnSuccessMessage(200, "Logged Out Successfully");
+        } else {
+            return $this->returnError(403, "UnAuthenticated");
+        }
     }
 
     /**
      * Refresh a token.
      *
      * @return \Illuminate\Http\JsonResponse
+     *
+     * -----------------@Reponses-------------------
+     * ----- 200 : Token Refreshed Successfully ----
+     * ----- 500 : Something Went Wrong         ----
+     * ----- 403 : UnAuthenticated              ----
+     * ---------------------------------------------
+     *
      */
     public function refresh()
     {
-        return $this->respondWithToken(auth()->refresh());
+        try {
+            if (auth()->user()) {
+                $refreshToken = $this->respondWithToken(auth()->refresh());
+
+                return $this->returnData("data", $refreshToken->original, 200, "Token Refreshed Successfully");
+            }
+        } catch (\Tymon\JWTAuth\Exceptions\TokenInvalidException $e) {
+            return $this->returnError(500, "Something  Went Wrong");
+        } catch (\Tymon\JWTAuth\Exceptions\TokenExpiredException $e) {
+            return $this->returnError(500, "Something  Went Wrong");
+        }
+
+        return $this->returnError(403, "UnAuthenticated");
+    }
+
+    /**
+     * Reset Password.
+     *
+     * @return \Illuminate\Http\JsonResponse
+     *
+     * -----------------@Reponses--------------------
+     * ----- 200 : Password Reseted Successfully ----
+     * ----- 500 : Something Went Wrong          ----
+     * ----- 404 : Email Not Found               ----
+     * ----------------------------------------------
+     *
+     */
+    public function resetPassword(ResetPasswordRequest $request)
+    {
+        try {
+
+            // validation
+            $validatedData = $request->validated();
+
+            $user = User::where('email',  $validatedData['email'])->first();
+
+            if (!$user) {
+                return $this->returnError(404, "User Email Not Found !");
+            }
+
+            $user->password                     = Hash::make($validatedData['password']);
+            $user->updated_at                   = $validatedData['updated_at'];
+            $user->generate_reset_password      = null;
+            $user->generate_reset_password_at   = null;
+            $user->email_verified_at            = $validatedData['updated_at'];
+
+            if ($user->save()) {
+                return $this->returnSuccessMessage(200, "Password Reseted Successfully !");
+            }
+        } catch (Exception $e) {
+            return $this->returnError(500, "Something  Went Wrong");
+        }
     }
 
     /**
