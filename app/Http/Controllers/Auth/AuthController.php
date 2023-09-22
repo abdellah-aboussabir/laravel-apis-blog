@@ -43,23 +43,23 @@ class AuthController extends Controller
     public function register(RegisterRequest $request)
     {
         try {
-
             // validation
             $validatedData = $request->validated();
 
             // new-user
             $newUser = new User();
+            $newUser->user_type = $validatedData['user_type'];
             $newUser->name = $validatedData['name'];
             $newUser->email = $validatedData['email'];
             $newUser->password = Hash::make($validatedData['password']);
 
             if (!$newUser->save()) {
-                return $this->returnError(500, "Something  Went Wrong");
+                return $this->returnError(500, "Something  Went Wrong", null);
             }
 
             return $this->returnSuccessMessage(201, "User Created Successfully");
         } catch (ClientException $e) {
-            return $this->returnError(500, "Something  Went Wrong");
+            return $this->returnError(500, "Something  Went Wrong", null);
         }
     }
 
@@ -90,15 +90,16 @@ class AuthController extends Controller
             $credentials =  request(['email', 'password']);
 
             if (!$token = auth()->attempt($credentials)) {
-                return $this->returnError(401, "Unauthorized");
+                return $this->returnError(401, "Unauthorized", null);
             }
 
             // return-token && user_type
             $details_response_token = $this->respondWithToken($token)->original;
+            $user_type = JWTAuth::user()->user_type;
 
-            return $this->returnData("data", $details_response_token, 200, "Logged Successfully");
+            return $this->returnData("data", compact('details_response_token', 'user_type'), 200, "Logged Successfully");
         } catch (\Exception $e) {
-            return $this->returnError(500, "Something  Went Wrong");
+            return $this->returnError(500, "Something  Went Wrong", null);
         }
     }
 
@@ -140,13 +141,13 @@ class AuthController extends Controller
             try {
                 JWTAuth::setToken($tokenFormatted)->invalidate();
             } catch (\Tymon\JWTAuth\Exceptions\TokenInvalidException $e) {
-                return $this->returnError(500, "Something  Went Wrong");
+                return $this->returnError(500, "Something  Went Wrong", null);
             } catch (\Tymon\JWTAuth\Exceptions\TokenExpiredException $e) {
-                return $this->returnError(500, "Something  Went Wrong");
+                return $this->returnError(500, "Something  Went Wrong", null);
             }
             return $this->returnSuccessMessage(200, "Logged Out Successfully");
         } else {
-            return $this->returnError(403, "UnAuthenticated");
+            return $this->returnError(403, "UnAuthenticated", null);
         }
     }
 
@@ -171,12 +172,12 @@ class AuthController extends Controller
                 return $this->returnData("data", $refreshToken->original, 200, "Token Refreshed Successfully");
             }
         } catch (\Tymon\JWTAuth\Exceptions\TokenInvalidException $e) {
-            return $this->returnError(500, "Something  Went Wrong");
+            return $this->returnError(500, "Something  Went Wrong", null);
         } catch (\Tymon\JWTAuth\Exceptions\TokenExpiredException $e) {
-            return $this->returnError(500, "Something  Went Wrong");
+            return $this->returnError(500, "Something  Went Wrong", null);
         }
 
-        return $this->returnError(403, "UnAuthenticated");
+        return $this->returnError(403, "UnAuthenticated", null);
     }
 
     /**
@@ -201,7 +202,7 @@ class AuthController extends Controller
             $user = User::where('email',  $validatedData['email'])->first();
 
             if (!$user) {
-                return $this->returnError(404, "User Email Not Found !");
+                return $this->returnError(404, "User Email Not Found !", null);
             }
 
             $user->password                     = Hash::make($validatedData['password']);
@@ -214,7 +215,7 @@ class AuthController extends Controller
                 return $this->returnSuccessMessage(200, "Password Reseted Successfully !");
             }
         } catch (Exception $e) {
-            return $this->returnError(500, "Something  Went Wrong");
+            return $this->returnError(500, "Something  Went Wrong", null);
         }
     }
 

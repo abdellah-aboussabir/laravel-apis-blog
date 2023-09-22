@@ -1,41 +1,34 @@
 <?php
 
-namespace App\Http\Requests\Auth;
+namespace App\Http\Requests\Common;
 
 use App\Http\Traits\GeneraleTrait;
-use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Contracts\Validation\Validator;
+use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Http\Exceptions\HttpResponseException;
 
-
-class LoginRequest extends FormRequest
+class Pagination extends FormRequest
 {
-
     use GeneraleTrait;
     /**
      * Determine if the user is authorized to make this request.
-     *
-     * @return bool
      */
-    public function authorize()
+    public function authorize(): bool
     {
         return true;
     }
 
-
     /**
      * Get the validation rules that apply to the request.
      *
-     * @return array
+     * @return array<string, \Illuminate\Contracts\Validation\ValidationRule|array|string>
      */
-    public function rules()
+    public function rules(): array
     {
         return [
-            "email" => "required|email",
-            "password" => "required"
+            'itemPerPage' => 'required|integer',
         ];
     }
-
     /**
      * Get the error messages for the defined validation rules.
      *
@@ -46,8 +39,8 @@ class LoginRequest extends FormRequest
         return [];
     }
 
-    public function failedValidation(Validator $validator)
+    public function failedValidation(Validator  $validator)
     {
-        throw new HttpResponseException($this->returnError(422, "the given data invalid", $validator->errors()));
+        throw new HttpResponseException($this->returnError(422, "The given data was invalid.", $validator->errors()));
     }
 }

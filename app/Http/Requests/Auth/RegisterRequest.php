@@ -31,10 +31,10 @@ class RegisterRequest extends FormRequest
     public function rules()
     {
         return [
+            "user_type" => ["required", Rule::in(['admin', 'member'])],
             "name" => "required|string",
             "email" => 'required|email|unique:users|regex:/^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/',
             "password" => "required|string",
-
         ];
     }
 
@@ -55,10 +55,10 @@ class RegisterRequest extends FormRequest
 
             // Check if error message indicates email is not unique
             if (strpos($errorMessage, 'has already been taken') !== false) {
-                throw new HttpResponseException($this->returnError(409, "The given email address is already in use"));
+                throw new HttpResponseException($this->returnError(409, "The given email address is already in use", $validator->errors()));
             }
         }
 
-        throw new HttpResponseException($this->returnError(422, "The given data was invalid."));
+        throw new HttpResponseException($this->returnError(422, "The given data was invalid.", $this->validated()));
     }
 }

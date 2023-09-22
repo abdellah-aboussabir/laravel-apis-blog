@@ -54,6 +54,6 @@ class ResetPasswordRequest extends FormRequest
 
     public function failedValidation(Validator  $validator)
     {
-        throw new HttpResponseException($this->returnError(422, "The given data was invalid."));
+        throw new HttpResponseException($this->returnError(422, "The given data was invalid.", $validator->errors()));
     }
 }

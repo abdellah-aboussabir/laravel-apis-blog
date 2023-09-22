@@ -7,16 +7,17 @@ namespace App\Http\Traits;
  */
 trait GeneraleTrait
 {
-    public function returnError($errorNum, $msg)
+    public static function returnError($errorNum, $msg, $error)
     {
         return response()->json([
             "status" => false,
             "code" => $errorNum,
             "msg" => $msg,
+            "error" => $error,
         ]);
     }
 
-    public function returnSuccessMessage($successNum, $msg)
+    public static function returnSuccessMessage($successNum, $msg)
     {
         return response()->json([
             "status" => true,
@@ -25,7 +26,7 @@ trait GeneraleTrait
         ]);
     }
 
-    public function returnData($key, $value, $successNum, $msg)
+    public static function  returnData($key, $value, $successNum, $msg)
     {
         return response()->json([
             "status" => true,

@@ -1,49 +1,36 @@
 <?php
 
-namespace App\Http\Requests\Auth;
+namespace App\Http\Requests;
 
 use App\Http\Traits\GeneraleTrait;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Contracts\Validation\Validator;
+use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Http\Exceptions\HttpResponseException;
 
-
-class LoginRequest extends FormRequest
+class StorePostRequest extends FormRequest
 {
-
     use GeneraleTrait;
     /**
      * Determine if the user is authorized to make this request.
-     *
-     * @return bool
      */
-    public function authorize()
+    public function authorize(): bool
     {
-        return true;
+        return auth()->id();
     }
-
 
     /**
      * Get the validation rules that apply to the request.
      *
-     * @return array
+     * @return array<string, ValidationRule|array|string>
      */
-    public function rules()
+    public function rules(): array
     {
         return [
-            "email" => "required|email",
-            "password" => "required"
+            "user_id" => 'required|integer',
+            "content" => 'required|string',
+            "title" => 'required|string',
         ];
-    }
-
-    /**
-     * Get the error messages for the defined validation rules.
-     *
-     * @return array
-     */
-    public function messages()
-    {
-        return [];
     }
 
     public function failedValidation(Validator $validator)

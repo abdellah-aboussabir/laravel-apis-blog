@@ -52,6 +52,6 @@ class Handler extends ExceptionHandler
 
     protected function unauthenticated($request, AuthenticationException $exception)
     {
-        return $this->returnError(401, "Unauthorized access");
+        return $this->returnError(401, "Unauthorized access", null);
     }
 }

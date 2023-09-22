@@ -1,8 +1,10 @@
 <?php
 
-use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Auth\AuthController;
+use App\Http\Controllers\User\UserController;
+use App\Http\Controllers\Post\PostController;
+
 /*
 |--------------------------------------------------------------------------
 | API Routes
@@ -25,21 +27,22 @@ Route::group([
     Route::post('me', [AuthController::class, 'me']);
 });
 
-
 Route::group([
-    'middleware'    =>  'api',
-    'prefix'        =>  'user'
-], function ($router) {
-    Route::get('/',  [AuthController::class, "index"]);
-    Route::get('/{id}',  [AuthController::class, "show"]);
+    'prefix'    => 'user',
+    'middleware' => 'api'
+], function () {
+    Route::get('/', [UserController::class, 'index']);
+    Route::get('/{id}', [UserController::class, 'show']);
+    Route::delete('/{id}', [UserController::class, 'destroy']);
 });
 
-// Route::apiResource('user', )
-
-// Route::group([
-//     'middleware'    =>  'api',
-//     'prefix'        =>  'blog'
-// ], function ($router) {
-//     Route::get('/',  [AuthController::class, "index"]);
-//     Route::get('/{id}',  [AuthController::class, "show"]);
-// });
+Route::group([
+    'prefix'    => 'post',
+    'middleware' => 'api'
+], function () {
+    Route::get('/', [PostController::class, 'index']);
+    Route::post('/', [PostController::class, 'store']);
+    Route::get('/{id}', [PostController::class, 'show']);
+    Route::put('/{id}', [PostController::class, 'update']);
+    Route::delete('/{id}', [PostController::class, 'destroy']);
+});
