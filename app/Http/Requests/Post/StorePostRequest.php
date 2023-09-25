@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Http\Requests;
+namespace App\Http\Requests\Post;
 
 use App\Http\Traits\GeneraleTrait;
 use Illuminate\Foundation\Http\FormRequest;
@@ -28,8 +28,8 @@ class StorePostRequest extends FormRequest
     {
         return [
             "user_id" => 'required|integer',
-            "content" => 'required|string',
-            "title" => 'required|string',
+            "content" => 'required|string|min:20',
+            "title" => 'required|string|min:8',
         ];
     }
 

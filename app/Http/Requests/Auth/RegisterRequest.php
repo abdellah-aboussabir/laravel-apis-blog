@@ -59,6 +59,6 @@ class RegisterRequest extends FormRequest
             }
         }
 
-        throw new HttpResponseException($this->returnError(422, "The given data was invalid.", $this->validated()));
+        throw new HttpResponseException($this->returnError(422, "The given data was invalid.", $validator->errors()));
     }
 }
